@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-# CÓDIGO CORREGIDO (Después)
+from dotenv import load_dotenv
 from flask import (Flask, render_template, request, send_from_directory, abort,
                    url_for, redirect, flash)
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
@@ -10,14 +10,11 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import DataRequired
 from werkzeug.security import generate_password_hash, check_password_hash
 
+load_dotenv()
 
-
-# ==========================
-# 1. CONFIGURACIÓN INICIAL
-# ==========================
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'El-pirata-de-culiacan-nunca-debio-de-haber-muerto'
-app.config['BASE_PATH'] = "imagenes"
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key-for-dev')
+app.config['BASE_PATH'] = os.getenv('IMAGE_BASE_PATH', 'imagenes')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -25,19 +22,11 @@ login_manager.login_view = 'login'
 login_manager.login_message = "Por favor, inicie sesión para acceder a esta página."
 login_manager.login_message_category = "danger"
 
-
-# ==========================================================
-# === AÑADIR ESTE BLOQUE PARA EL AÑO AUTOMÁTICO EN EL FOOTER ===
-# ==========================================================
 @app.context_processor
 def inject_year():
-    """ Inyecta el año actual en todas las plantillas. """
     return {'current_year': datetime.utcnow().year}
-# ==========================================================
 
-# ==========================
-# 2. MODELO DE USUARIO Y BASE DE DATOS SIMULADA
-# ==========================
+
 class User(UserMixin):
     def __init__(self, id, username, password_hash):
         self.id = id
@@ -51,26 +40,32 @@ class User(UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+admin_username = os.getenv('ADMIN_USERNAME')
+admin_password = os.getenv('ADMIN_PASSWORD')
+
+if not admin_username or not admin_password:
+    raise ValueError("ADMIN_USERNAME y ADMIN_PASSWORD deben estar definidos en el archivo .env")
+
 users_db = {
-    "1": User(id="1", username="admin", password_hash=generate_password_hash("@Cebiche123"))
+    "1": User(
+        id="1",
+        username=admin_username,
+        password_hash=generate_password_hash(admin_password)
+    )
 }
 
 @login_manager.user_loader
 def load_user(user_id):
     return users_db.get(user_id)
 
-# ==========================
-# 3. FORMULARIO DE LOGIN
-# ==========================
+
 class LoginForm(FlaskForm):
     username = StringField('Usuario', validators=[DataRequired()])
     password = PasswordField('Contraseña', validators=[DataRequired()])
     remember_me = BooleanField('Recuérdame')
     submit = SubmitField('Iniciar Sesión')
 
-# ==========================
-# 4. RUTAS
-# ==========================
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -113,35 +108,21 @@ def show_day(day):
 @login_required
 def show_hour(day, hour):
     hour_path = os.path.join(app.config['BASE_PATH'], day, hour)
-    if not os.path.exists(hour_path):
-        abort(404)
-
-    # --- FUNCIÓN PARA ORDENAR LAS HORAS ---
-    # SE ELIMINA LA FUNCIÓN 'sort_key' DE AQUÍ PORQUE NO SE USABA
-
-    # --- INICIO DE CAMBIOS PARA PAGINACIÓN ---
-
-    # 1. Obtener el número de página de la URL (ej. ?page=2), por defecto es 1.
+    if not os.path.exists(hour_path): abort(404)
+    
     page = request.args.get('page', 1, type=int)
-    IMAGES_PER_PAGE = 12  # Define cuántas imágenes mostrar por página.
-
-    # 2. Obtener la lista completa de imágenes ORDENADAS
-    all_images = sorted(os.listdir(hour_path)) # Se ordena alfabéticamente que es correcto para los nombres de archivo
+    IMAGES_PER_PAGE = 12
+    all_images = sorted(os.listdir(hour_path))
     total_images = len(all_images)
-
-    # ... (el resto de la función sigue igual) ...
     start_index = (page - 1) * IMAGES_PER_PAGE
     end_index = start_index + IMAGES_PER_PAGE
     images_on_page = all_images[start_index:end_index]
-
     total_pages = (total_images + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
 
     time_range = ""
     if images_on_page:
         def format_time(filename):
-            base = os.path.splitext(filename)[0]
-            return base.replace("m", "m ").replace("s", "s")
-
+            return os.path.splitext(filename)[0].replace("m", "m ").replace("s", "s")
         first_time = format_time(images_on_page[0])
         last_time = format_time(images_on_page[-1])
         time_range = f"({first_time} - {last_time})"
@@ -160,7 +141,6 @@ def show_hour(day, hour):
         IMAGES_PER_PAGE=IMAGES_PER_PAGE
     )
 
-
 @app.route("/images/<path:filepath>")
 @login_required
 def serve_image_path(filepath):
@@ -169,11 +149,8 @@ def serve_image_path(filepath):
     directory, filename = os.path.split(safe_path)
     return send_from_directory(directory, filename)
 
-# ==========================
-# 5. FUNCIONES DE AYUDA
-# ==========================
+
 def group_by_weeks():
-    # ... (esta función no cambia)
     base_path = app.config['BASE_PATH']
     if not os.path.exists(base_path): return {}
     items = sorted(os.listdir(base_path), reverse=True)
@@ -193,26 +170,18 @@ def group_by_weeks():
 def get_hour_data(day_path):
     hour_data = []
     if not os.path.isdir(day_path): return hour_data
-    hours_list = os.listdir(day_path)
     
-    # --- LÓGICA DE ORDENAMIENTO CORREGIDA ---
-    # Esta es la función que sí entiende "07_am", "12_pm", etc.
     def sort_key(hour_str):
         try:
             parts = hour_str.lower().split("_")
             hour_num = int(parts[0])
             ampm = parts[1] if len(parts) > 1 else "am"
-            # Convierte a formato 24 horas para ordenar fácil
-            if ampm == "pm" and hour_num != 12:
-                hour_num += 12
-            if ampm == "am" and hour_num == 12: # Medianoche
-                hour_num = 0
+            if ampm == "pm" and hour_num != 12: hour_num += 12
+            if ampm == "am" and hour_num == 12: hour_num = 0
             return hour_num
-        except Exception:
-            return 99  # Si algo falla (ej. un archivo .DS_Store), se va al final
-
-    sorted_hours = sorted(hours_list, key=sort_key)
-    # --- FIN DE LA CORRECCIÓN ---
+        except Exception: return 99
+    
+    sorted_hours = sorted(os.listdir(day_path), key=sort_key)
 
     for hour in sorted_hours:
         hour_path = os.path.join(day_path, hour)
@@ -222,10 +191,10 @@ def get_hour_data(day_path):
             hour_data.append({"hour": hour, "thumbnail": thumbnail})
     return hour_data
 
-# ==========================
-# 6. EJECUCIÓN
-# ==========================
+
 if __name__ == "__main__":
     if not os.path.exists(app.config['BASE_PATH']):
         os.makedirs(app.config['BASE_PATH'])
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    
+    is_debug = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
+    app.run(host="0.0.0.0", port=8080, debug=is_debug)
