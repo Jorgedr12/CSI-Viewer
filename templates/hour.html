@@ -3,6 +3,37 @@
 {% block title %}Análisis {{ display_day }} {{ hour }}{% endblock %}
 
 {% block content %}
+<style>
+    .modal-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: rgba(0, 0, 0, 0.4);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        z-index: 1056; 
+    }
+    .modal-nav-btn:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+    .modal-nav-btn.prev {
+        left: 15px;
+    }
+    .modal-nav-btn.next {
+        right: 15px;
+    }
+
+</style>
+
 <div class="top-bar">
     <a href="{{ url_for('show_day', day=day) }}" class="csi-btn"><i class="fas fa-arrow-left me-2"></i>VOLVER AL DÍA</a>
     <a href="{{ url_for('logout') }}" class="csi-btn"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a>
@@ -68,8 +99,10 @@
                 <h5 class="modal-title" id="imageModalLabel"></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center">
+            <div class="modal-body text-center position-relative">
+                <button class="modal-nav-btn prev" id="modal-prev-btn"><i class="fas fa-chevron-left"></i></button>
                 <img src="" class="img-fluid" style="max-height: 85vh;" alt="Imagen ampliada">
+                <button class="modal-nav-btn next" id="modal-next-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     </div>
@@ -78,25 +111,76 @@
 
 {% block scripts %}
 <script>
-    const imagesOnCurrentPage = {{ images|tojson }};
-    const imageBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour) }}/";
     const imageModal = document.getElementById('imageModal');
+    
+    let imagesOnCurrentPage = {{ images|tojson }};
+    let currentPage = {{ page }};
+    let totalPages = {{ total_pages }};
+    let currentIndexInPage = 0;
+
+    const imageBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour) }}/";
+    const apiBaseUrl = `{{ url_for('get_images_for_hour', day=day, hour=hour) }}`;
 
     if (imageModal) {
         const modalTitle = imageModal.querySelector('.modal-title');
         const modalImage = imageModal.querySelector('.modal-body img');
-        let currentIndexInPage = 0;
+        
+        const prevButton = document.getElementById('modal-prev-btn');
+        const nextButton = document.getElementById('modal-next-btn');
 
         function formatName(name) {
             return name.replace('.jpg','').replace('m','m ').replace('s','s');
         }
-
+        
         function updateModal(indexInPage) {
-            if (indexInPage < 0 || indexInPage >= imagesOnCurrentPage.length) return;
             currentIndexInPage = indexInPage;
             const imageName = imagesOnCurrentPage[indexInPage];
             modalTitle.textContent = `[ ${formatName(imageName)} ]`;
             modalImage.src = imageBaseUrl + imageName;
+        }
+
+        async function loadPage(pageNumber, position = 'start') {
+            modalImage.style.opacity = 0.5; // Indicador visual de carga
+
+            try {
+                const response = await fetch(`${apiBaseUrl}?page=${pageNumber}`);
+                if (!response.ok) throw new Error('La ruta API no funcionó. Verifica server.py');
+                
+                const data = await response.json();
+                
+                imagesOnCurrentPage = data.images;
+                currentPage = data.currentPage;
+                totalPages = data.totalPages;
+
+                const newIndex = position === 'start' ? 0 : imagesOnCurrentPage.length - 1;
+                updateModal(newIndex);
+
+            } catch (error) {
+                console.error("Error al cargar la página de imágenes:", error);
+                modalTitle.textContent = "Error al cargar imágenes";
+            } finally {
+                modalImage.style.opacity = 1;
+            }
+        }
+
+        function navigateNext() {
+            if (currentIndexInPage >= imagesOnCurrentPage.length - 1) {
+                if (currentPage < totalPages) {
+                    loadPage(currentPage + 1, 'start');
+                }
+            } else {
+                updateModal(currentIndexInPage + 1);
+            }
+        }
+
+        function navigatePrev() {
+            if (currentIndexInPage <= 0) {
+                if (currentPage > 1) {
+                    loadPage(currentPage - 1, 'end');
+                }
+            } else {
+                updateModal(currentIndexInPage - 1);
+            }
         }
 
         imageModal.addEventListener('show.bs.modal', event => {
@@ -106,12 +190,13 @@
 
         document.addEventListener('keydown', (event) => {
             if (!imageModal.classList.contains('show')) return;
-            if (event.key === 'ArrowRight') {
-                updateModal((currentIndexInPage + 1) % imagesOnCurrentPage.length);
-            } else if (event.key === 'ArrowLeft') {
-                updateModal((currentIndexInPage - 1 + imagesOnCurrentPage.length) % imagesOnCurrentPage.length);
-            }
+            if (event.key === 'ArrowRight') navigateNext();
+            if (event.key === 'ArrowLeft') navigatePrev();
         });
+
+        nextButton.addEventListener('click', navigateNext);
+        prevButton.addEventListener('click', navigatePrev);
     }
 </script>
 {% endblock %}
+

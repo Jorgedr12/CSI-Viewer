@@ -111,7 +111,7 @@ def show_hour(day, hour):
     if not os.path.exists(hour_path): abort(404)
     
     page = request.args.get('page', 1, type=int)
-    IMAGES_PER_PAGE = 12
+    IMAGES_PER_PAGE = 25
     all_images = sorted(os.listdir(hour_path))
     total_images = len(all_images)
     start_index = (page - 1) * IMAGES_PER_PAGE
@@ -148,6 +148,32 @@ def serve_image_path(filepath):
     if not safe_path.startswith(os.path.abspath(app.config['BASE_PATH'])): abort(404)
     directory, filename = os.path.split(safe_path)
     return send_from_directory(directory, filename)
+
+@app.route("/api/images/<day>/<hour>")
+@login_required
+def get_images_for_hour(day, hour):
+    hour_path = os.path.join(app.config['BASE_PATH'], day, hour)
+    if not os.path.exists(hour_path):
+        return abort(404)
+
+    page = request.args.get('page', 1, type=int)
+    IMAGES_PER_PAGE = 25
+
+    all_images = sorted(os.listdir(hour_path))
+    total_images = len(all_images)
+    
+    start_index = (page - 1) * IMAGES_PER_PAGE
+    end_index = start_index + IMAGES_PER_PAGE
+    images_on_page = all_images[start_index:end_index]
+
+    total_pages = (total_images + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
+
+    return {
+        "images": images_on_page,
+        "currentPage": page,
+        "totalPages": total_pages
+    }
+
 
 
 def group_by_weeks():
