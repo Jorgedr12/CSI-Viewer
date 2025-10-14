@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+
+{% block title %}Log del Día {{ display_day }}{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <a href="{{ url_for('index') }}" class="csi-btn"><i class="fas fa-arrow-left me-2"></i>VOLVER A ARCHIVOS</a>
+    <a href="{{ url_for('logout') }}" class="csi-btn"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a>
+</div>
+<h2 class="csi-subtitle mb-4">EVIDENCE LOG: {{ display_day }}</h2>
+<div class="row g-3">
+    {% for hour_data in hours %}
+    <div class="col-6 col-sm-4 col-md-3">
+        <div class="csi-panel">
+            {% if hour_data.thumbnail %}
+            <img src="{{ url_for('serve_image_path', filepath=day+'/'+hour_data.hour+'/'+hour_data.thumbnail) }}" alt="Vista previa">
+            {% else %}
+            <div class="d-flex align-items-center justify-content-center" style="aspect-ratio: 16/9; background-color: #000;"><i class="fas fa-exclamation-triangle fa-2x text-muted"></i></div>
+            {% endif %}
+            <div class="csi-panel-title"><i class="fas fa-clock me-2"></i>{{ hour_data.hour }}</div>
+            <a href="{{ url_for('show_hour', day=day, hour=hour_data.hour) }}" class="stretched-link"></a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

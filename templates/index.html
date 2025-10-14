@@ -1,0 +1,31 @@
+{% extends "_base.html" %}
+
+{% block title %}Vigilancia{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="text-light">Usuario: <strong class="text-info">{{ current_user.username }}</strong></div>
+    <a href="{{ url_for('logout') }}" class="csi-btn"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a>
+</div>
+<header class="csi-header"><span class="icon fas fa-video"></span><h1>Sistema de Vigilancia</h1></header>
+<div class="accordion csi-accordion" id="weeksAccordion">
+    {% for week, days in weeks.items() %}
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}">
+               <i class="fas fa-calendar-week me-3"></i> [ {{ week }} ]
+            </button>
+        </h2>
+        <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#weeksAccordion">
+            <div class="accordion-body"><ul class="list-group list-group-flush">
+                {% for day in days %}
+                <a href="{{ url_for('show_day', day=day.path) }}" class="list-group-item">
+                    <i class="fas fa-folder me-3"></i> > Acceder a Grabaciones del {{ day.display }}
+                </a>
+                {% endfor %}
+            </ul></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

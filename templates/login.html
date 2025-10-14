@@ -1,0 +1,41 @@
+{% extends "_base.html" %}
+
+{% block title %}Autenticación{% endblock %}
+
+{% block content %}
+<style>
+    .login-container { max-width: 400px; margin: 3rem auto; }
+    .form-control { background-color: #1a1c24; border-color: var(--csi-border); color: var(--csi-text); }
+    .form-control:focus { background-color: #1a1c24; border-color: var(--csi-primary); box-shadow: 0 0 10px var(--csi-primary); color: var(--csi-text); }
+    .btn-submit { background-color: var(--csi-primary); border: none; color: #fff; width: 100%; font-weight: 700; transition: all 0.2s ease; }
+    .btn-submit:hover { background-color: #fff; color: var(--csi-primary); }
+    .csi-logo { width: 50%; max-width: 125px; height: auto; margin-bottom: 1.5rem; }
+</style>
+<header class="csi-header mt-5">
+    <img src="{{ url_for('static', filename='img/csipro.svg') }}" alt="CSI PRO Logo" class="csi-logo">
+    <h1>Acceso al Sistema</h1>
+</header>
+<div class="csi-panel login-container p-4">
+    <form method="POST" action="{{ url_for('login') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control") }}
+        </div>
+        <div class="mb-3 form-check">
+            {{ form.remember_me(class="form-check-input") }}
+            {{ form.remember_me.label(class="form-check-label") }}
+        </div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-danger" role="alert">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+        {{ form.submit(class="btn btn-submit") }}
+    </form>
+</div>
+{% endblock %}
