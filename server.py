@@ -107,7 +107,7 @@ def show_day(day):
 @app.route("/day/<day>/hour/<hour>")
 @login_required
 def show_hour(day, hour):
-    hour_path = os.path.join(app.config['BASE_PATH'], day, hour)
+    hour_path = os.path.join(app.config['BASE_PATH'], day, hour, "normal")
     if not os.path.exists(hour_path): abort(404)
     
     page = request.args.get('page', 1, type=int)
@@ -152,7 +152,7 @@ def serve_image_path(filepath):
 @app.route("/api/images/<day>/<hour>")
 @login_required
 def get_images_for_hour(day, hour):
-    hour_path = os.path.join(app.config['BASE_PATH'], day, hour)
+    hour_path = os.path.join(app.config['BASE_PATH'], day, hour, "normal")
     if not os.path.exists(hour_path):
         return abort(404)
 
@@ -212,9 +212,11 @@ def get_hour_data(day_path):
     for hour in sorted_hours:
         hour_path = os.path.join(day_path, hour)
         if os.path.isdir(hour_path):
-            images = sorted(os.listdir(hour_path))
-            thumbnail = images[0] if images else None
-            hour_data.append({"hour": hour, "thumbnail": thumbnail})
+            normal_path = os.path.join(hour_path, "normal")
+            if os.path.isdir(normal_path):
+                images = sorted(os.listdir(normal_path))
+                thumbnail = images[0] if images else None
+                hour_data.append({"hour": hour, "thumbnail": thumbnail})
     return hour_data
 
 

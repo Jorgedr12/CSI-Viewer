@@ -31,7 +31,36 @@
     .modal-nav-btn.next {
         right: 15px;
     }
-
+    
+    .vision-toggle-btn {
+        position: absolute;
+        top: 15px;
+        right: 60px;
+        background-color: rgba(0, 123, 255, 0.8);
+        color: #fff;
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 1056;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .vision-toggle-btn:hover {
+        background-color: rgba(0, 123, 255, 1);
+        transform: scale(1.05);
+    }
+    .vision-toggle-btn.night-mode {
+        background-color: rgba(40, 167, 69, 0.8);
+        border-color: #28a745;
+    }
+    .vision-toggle-btn.night-mode:hover {
+        background-color: rgba(40, 167, 69, 1);
+    }
 </style>
 
 <div class="top-bar">
@@ -43,9 +72,11 @@
     ANALYZING EVIDENCE: {{ display_day }} - {{ hour }} <span class="text-info">{{ time_range }}</span>
 </h2>
 
-<div class="row g-3 row-cols-1 row-cols-sm-3 row-cols-md-5">  {% for img in images %}
-    <div>  <div class="csi-panel">
-            <img src="{{ url_for('serve_image_path', filepath=day+'/'+hour+'/'+img) }}" alt="Miniatura"
+<div class="row g-3 row-cols-1 row-cols-sm-3 row-cols-md-5">
+    {% for img in images %}
+    <div>
+        <div class="csi-panel">
+            <img src="{{ url_for('serve_image_path', filepath=day+'/'+hour+'/normal/'+img) }}" alt="Miniatura"
                  data-bs-toggle="modal" data-bs-target="#imageModal" data-index="{{ loop.index0 }}">
             <div class="csi-panel-title">
                 <i class="fas fa-camera me-2"></i>
@@ -100,8 +131,12 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center position-relative">
+                <button class="vision-toggle-btn" id="vision-toggle-btn">
+                    <i class="fas fa-adjust"></i>
+                    <span id="vision-mode-text">Modo Nocturno</span>
+                </button>
                 <button class="modal-nav-btn prev" id="modal-prev-btn"><i class="fas fa-chevron-left"></i></button>
-                <img src="" class="img-fluid" style="max-height: 85vh;" alt="Imagen ampliada">
+                <img src="" class="img-fluid" style="max-height: 85vh;" alt="Imagen ampliada" id="modal-image">
                 <button class="modal-nav-btn next" id="modal-next-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
@@ -117,13 +152,17 @@
     let currentPage = {{ page }};
     let totalPages = {{ total_pages }};
     let currentIndexInPage = 0;
+    let isNightVision = false;
 
-    const imageBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour) }}/";
+    const normalBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour+'/normal') }}/";
+    const nightBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour+'/nocturna') }}/";
     const apiBaseUrl = `{{ url_for('get_images_for_hour', day=day, hour=hour) }}`;
 
     if (imageModal) {
         const modalTitle = imageModal.querySelector('.modal-title');
-        const modalImage = imageModal.querySelector('.modal-body img');
+        const modalImage = document.getElementById('modal-image');
+        const visionToggleBtn = document.getElementById('vision-toggle-btn');
+        const visionModeText = document.getElementById('vision-mode-text');
         
         const prevButton = document.getElementById('modal-prev-btn');
         const nextButton = document.getElementById('modal-next-btn');
@@ -135,12 +174,28 @@
         function updateModal(indexInPage) {
             currentIndexInPage = indexInPage;
             const imageName = imagesOnCurrentPage[indexInPage];
+            const baseUrl = isNightVision ? nightBaseUrl : normalBaseUrl;
+            
             modalTitle.textContent = `[ ${formatName(imageName)} ]`;
-            modalImage.src = imageBaseUrl + imageName;
+            modalImage.src = baseUrl + imageName;
+        }
+
+        function toggleVisionMode() {
+            isNightVision = !isNightVision;
+            
+            if (isNightVision) {
+                visionToggleBtn.classList.add('night-mode');
+                visionModeText.textContent = 'Modo Normal';
+            } else {
+                visionToggleBtn.classList.remove('night-mode');
+                visionModeText.textContent = 'Modo Nocturno';
+            }
+            
+            updateModal(currentIndexInPage);
         }
 
         async function loadPage(pageNumber, position = 'start') {
-            modalImage.style.opacity = 0.5; // Indicador visual de carga
+            modalImage.style.opacity = 0.5;
 
             try {
                 const response = await fetch(`${apiBaseUrl}?page=${pageNumber}`);
@@ -185,6 +240,9 @@
 
         imageModal.addEventListener('show.bs.modal', event => {
             const index = parseInt(event.relatedTarget.getAttribute('data-index'));
+            isNightVision = false;
+            visionToggleBtn.classList.remove('night-mode');
+            visionModeText.textContent = 'Modo Nocturno';
             updateModal(index);
         });
 
@@ -196,7 +254,7 @@
 
         nextButton.addEventListener('click', navigateNext);
         prevButton.addEventListener('click', navigatePrev);
+        visionToggleBtn.addEventListener('click', toggleVisionMode);
     }
 </script>
 {% endblock %}
-
