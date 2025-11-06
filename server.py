@@ -112,7 +112,7 @@ def show_hour(day, hour):
     
     page = request.args.get('page', 1, type=int)
     IMAGES_PER_PAGE = 25
-    all_images = sorted(os.listdir(hour_path))
+    all_images = sorted([f for f in os.listdir(hour_path) if f.lower().endswith('.jpg')])
     total_images = len(all_images)
     start_index = (page - 1) * IMAGES_PER_PAGE
     end_index = start_index + IMAGES_PER_PAGE
@@ -159,7 +159,7 @@ def get_images_for_hour(day, hour):
     page = request.args.get('page', 1, type=int)
     IMAGES_PER_PAGE = 25
 
-    all_images = sorted(os.listdir(hour_path))
+    all_images = sorted([f for f in os.listdir(hour_path) if f.lower().endswith('.jpg')])
     total_images = len(all_images)
     
     start_index = (page - 1) * IMAGES_PER_PAGE
@@ -214,7 +214,7 @@ def get_hour_data(day_path):
         if os.path.isdir(hour_path):
             normal_path = os.path.join(hour_path, "normal")
             if os.path.isdir(normal_path):
-                images = sorted(os.listdir(normal_path))
+                images = sorted([f for f in os.listdir(normal_path) if f.lower().endswith('.jpg')])
                 thumbnail = images[0] if images else None
                 hour_data.append({"hour": hour, "thumbnail": thumbnail})
     return hour_data
