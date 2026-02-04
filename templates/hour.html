@@ -31,36 +31,6 @@
     .modal-nav-btn.next {
         right: 15px;
     }
-    
-    .vision-toggle-btn {
-        position: absolute;
-        top: 15px;
-        right: 60px;
-        background-color: rgba(0, 123, 255, 0.8);
-        color: #fff;
-        border: 2px solid #007bff;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-size: 0.9rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        z-index: 1056;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .vision-toggle-btn:hover {
-        background-color: rgba(0, 123, 255, 1);
-        transform: scale(1.05);
-    }
-    .vision-toggle-btn.night-mode {
-        background-color: rgba(40, 167, 69, 0.8);
-        border-color: #28a745;
-    }
-    .vision-toggle-btn.night-mode:hover {
-        background-color: rgba(40, 167, 69, 1);
-    }
 </style>
 
 <div class="top-bar">
@@ -87,42 +57,6 @@
     {% endfor %}
 </div>
 
-<nav class="pagination-nav mt-5" aria-label="Navegación de imágenes">
-    {% if page > 1 %}
-        <a href="{{ url_for('show_hour', day=day, hour=hour, page=page-1) }}" class="csi-btn">
-            <i class="fas fa-chevron-left me-2"></i> Anterior
-        </a>
-    {% else %}
-        <span class="csi-btn disabled"><i class="fas fa-chevron-left me-2"></i> Anterior</span>
-    {% endif %}
-
-    <div class="page-numbers">
-        {% set pages_to_show = 6 %}
-        {% set start_page = (page - (pages_to_show // 2))|int %}
-        {% if start_page < 1 %}{% set start_page = 1 %}{% endif %}
-        {% set end_page = start_page + pages_to_show - 1 %}
-        {% if end_page > total_pages %}
-            {% set end_page = total_pages %}
-            {% set start_page = (total_pages - pages_to_show + 1) if (total_pages - pages_to_show + 1) > 0 else 1 %}
-        {% endif %}
-
-        {% for p in range(start_page, end_page + 1) %}
-            <a href="{{ url_for('show_hour', day=day, hour=hour, page=p) }}" 
-            class="csi-btn {% if p == page %}active{% endif %}">
-                {{ p }}
-            </a>
-        {% endfor %}
-    </div>
-
-    {% if page < total_pages %}
-        <a href="{{ url_for('show_hour', day=day, hour=hour, page=page+1) }}" class="csi-btn">
-            Siguiente <i class="fas fa-chevron-right ms-2"></i>
-        </a>
-    {% else %}
-        <span class="csi-btn disabled">Siguiente <i class="fas fa-chevron-right ms-2"></i></span>
-    {% endif %}
-</nav>
-
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
@@ -131,10 +65,6 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center position-relative">
-                <button class="vision-toggle-btn" id="vision-toggle-btn">
-                    <i class="fas fa-adjust"></i>
-                    <span id="vision-mode-text">Modo Nocturno</span>
-                </button>
                 <button class="modal-nav-btn prev" id="modal-prev-btn"><i class="fas fa-chevron-left"></i></button>
                 <img src="" class="img-fluid" style="max-height: 85vh;" alt="Imagen ampliada" id="modal-image">
                 <button class="modal-nav-btn next" id="modal-next-btn"><i class="fas fa-chevron-right"></i></button>
@@ -152,18 +82,13 @@
     let currentPage = {{ page }};
     let totalPages = {{ total_pages }};
     let currentIndexInPage = 0;
-    let isNightVision = false;
 
     const normalBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour+'/normal') }}/";
-    const nightBaseUrl = "{{ url_for('serve_image_path', filepath=day+'/'+hour+'/nocturna') }}/";
     const apiBaseUrl = `{{ url_for('get_images_for_hour', day=day, hour=hour) }}`;
 
     if (imageModal) {
         const modalTitle = imageModal.querySelector('.modal-title');
         const modalImage = document.getElementById('modal-image');
-        const visionToggleBtn = document.getElementById('vision-toggle-btn');
-        const visionModeText = document.getElementById('vision-mode-text');
-        
         const prevButton = document.getElementById('modal-prev-btn');
         const nextButton = document.getElementById('modal-next-btn');
 
@@ -174,45 +99,26 @@
         function updateModal(indexInPage) {
             currentIndexInPage = indexInPage;
             const imageName = imagesOnCurrentPage[indexInPage];
-            const baseUrl = isNightVision ? nightBaseUrl : normalBaseUrl;
             
             modalTitle.textContent = `[ ${formatName(imageName)} ]`;
-            modalImage.src = baseUrl + imageName;
-        }
-
-        function toggleVisionMode() {
-            isNightVision = !isNightVision;
-            
-            if (isNightVision) {
-                visionToggleBtn.classList.add('night-mode');
-                visionModeText.textContent = 'Modo Normal';
-            } else {
-                visionToggleBtn.classList.remove('night-mode');
-                visionModeText.textContent = 'Modo Nocturno';
-            }
-            
-            updateModal(currentIndexInPage);
+            modalImage.src = normalBaseUrl + imageName;
         }
 
         async function loadPage(pageNumber, position = 'start') {
             modalImage.style.opacity = 0.5;
-
             try {
                 const response = await fetch(`${apiBaseUrl}?page=${pageNumber}`);
-                if (!response.ok) throw new Error('La ruta API no funcionó. Verifica server.py');
+                if (!response.ok) throw new Error('Error en API');
                 
                 const data = await response.json();
-                
                 imagesOnCurrentPage = data.images;
                 currentPage = data.currentPage;
                 totalPages = data.totalPages;
 
                 const newIndex = position === 'start' ? 0 : imagesOnCurrentPage.length - 1;
                 updateModal(newIndex);
-
             } catch (error) {
-                console.error("Error al cargar la página de imágenes:", error);
-                modalTitle.textContent = "Error al cargar imágenes";
+                console.error("Error:", error);
             } finally {
                 modalImage.style.opacity = 1;
             }
@@ -220,9 +126,7 @@
 
         function navigateNext() {
             if (currentIndexInPage >= imagesOnCurrentPage.length - 1) {
-                if (currentPage < totalPages) {
-                    loadPage(currentPage + 1, 'start');
-                }
+                if (currentPage < totalPages) loadPage(currentPage + 1, 'start');
             } else {
                 updateModal(currentIndexInPage + 1);
             }
@@ -230,9 +134,7 @@
 
         function navigatePrev() {
             if (currentIndexInPage <= 0) {
-                if (currentPage > 1) {
-                    loadPage(currentPage - 1, 'end');
-                }
+                if (currentPage > 1) loadPage(currentPage - 1, 'end');
             } else {
                 updateModal(currentIndexInPage - 1);
             }
@@ -240,9 +142,6 @@
 
         imageModal.addEventListener('show.bs.modal', event => {
             const index = parseInt(event.relatedTarget.getAttribute('data-index'));
-            isNightVision = false;
-            visionToggleBtn.classList.remove('night-mode');
-            visionModeText.textContent = 'Modo Nocturno';
             updateModal(index);
         });
 
@@ -254,7 +153,6 @@
 
         nextButton.addEventListener('click', navigateNext);
         prevButton.addEventListener('click', navigatePrev);
-        visionToggleBtn.addEventListener('click', toggleVisionMode);
     }
 </script>
 {% endblock %}

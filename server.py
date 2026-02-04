@@ -225,4 +225,4 @@ if __name__ == "__main__":
         os.makedirs(app.config['BASE_PATH'])
     
     is_debug = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
-    app.run(host="0.0.0.0", port=8080, debug=is_debug)
+    app.run(host="0.0.0.0", port=8080)
