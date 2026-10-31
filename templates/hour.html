@@ -2,6 +2,32 @@
 
 {% block title %}Análisis {{ display_day }} {{ hour }}{% endblock %}
 
+{% macro pagination(position) %}
+{% if total_pages > 1 %}
+<nav class="pagination-nav {{ 'mb-4' if position == 'top' else 'mt-4' }}" aria-label="Paginación">
+    <span class="page-info">PÁGINA {{ page }} / {{ total_pages }} <span class="text-muted d-none d-md-inline">· {{ total_images }} imágenes</span></span>
+    <div class="page-numbers">
+        <a href="{{ url_for('show_hour', day=day, hour=hour, page=page-1) }}" class="csi-btn {% if page <= 1 %}disabled{% endif %}" aria-label="Página anterior"><i class="fas fa-chevron-left"></i></a>
+        {% set window = 2 %}
+        {% if page - window > 1 %}
+            <a href="{{ url_for('show_hour', day=day, hour=hour, page=1) }}" class="csi-btn">1</a>
+            {% if page - window > 2 %}<span class="page-ellipsis">…</span>{% endif %}
+        {% endif %}
+        {% for p in range([1, page - window]|max, [total_pages, page + window]|min + 1) %}
+            <a href="{{ url_for('show_hour', day=day, hour=hour, page=p) }}"
+               class="csi-btn {% if p == page %}active{% endif %} {% if (p - page)|abs == window %}d-none d-sm-inline-block{% endif %}"
+               {% if p == page %}aria-current="page"{% endif %}>{{ p }}</a>
+        {% endfor %}
+        {% if page + window < total_pages %}
+            {% if page + window < total_pages - 1 %}<span class="page-ellipsis">…</span>{% endif %}
+            <a href="{{ url_for('show_hour', day=day, hour=hour, page=total_pages) }}" class="csi-btn">{{ total_pages }}</a>
+        {% endif %}
+        <a href="{{ url_for('show_hour', day=day, hour=hour, page=page+1) }}" class="csi-btn {% if page >= total_pages %}disabled{% endif %}" aria-label="Página siguiente"><i class="fas fa-chevron-right"></i></a>
+    </div>
+</nav>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <style>
     .modal-nav-btn {
@@ -66,6 +92,8 @@
     ANALYZING EVIDENCE: {{ display_day }} - {{ hour }} <span class="text-info">{{ time_range }}</span>
 </h2>
 
+{{ pagination('top') }}
+
 <div class="row g-2 g-md-3 row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5">
     {% for img in images %}
     <div>
@@ -80,6 +108,8 @@
     </div>
     {% endfor %}
 </div>
+
+{{ pagination('bottom') }}
 
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
@@ -163,6 +193,15 @@
                 updateModal(currentIndexInPage - 1);
             }
         }
+
+        // Si el modal avanzó a otra página, mostrar esa página al cerrarlo
+        imageModal.addEventListener('hidden.bs.modal', () => {
+            if (currentPage !== {{ page }}) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', currentPage);
+                window.location.href = url.toString();
+            }
+        });
 
         imageModal.addEventListener('show.bs.modal', event => {
             const index = parseInt(event.relatedTarget.getAttribute('data-index'));

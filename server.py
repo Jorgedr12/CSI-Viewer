@@ -114,10 +114,11 @@ def show_hour(day, hour):
     IMAGES_PER_PAGE = 25
     all_images = sorted([f for f in os.listdir(hour_path) if f.lower().endswith('.jpg')])
     total_images = len(all_images)
+    total_pages = (total_images + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
+    page = max(1, min(page, total_pages or 1))
     start_index = (page - 1) * IMAGES_PER_PAGE
     end_index = start_index + IMAGES_PER_PAGE
     images_on_page = all_images[start_index:end_index]
-    total_pages = (total_images + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
 
     time_range = ""
     if images_on_page:
@@ -137,6 +138,7 @@ def show_hour(day, hour):
         images=images_on_page,
         page=page,
         total_pages=total_pages,
+        total_images=total_images,
         time_range=time_range,
         IMAGES_PER_PAGE=IMAGES_PER_PAGE
     )
@@ -161,12 +163,12 @@ def get_images_for_hour(day, hour):
 
     all_images = sorted([f for f in os.listdir(hour_path) if f.lower().endswith('.jpg')])
     total_images = len(all_images)
-    
+    total_pages = (total_images + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
+    page = max(1, min(page, total_pages or 1))
+
     start_index = (page - 1) * IMAGES_PER_PAGE
     end_index = start_index + IMAGES_PER_PAGE
     images_on_page = all_images[start_index:end_index]
-
-    total_pages = (total_images + IMAGES_PER_PAGE - 1) // IMAGES_PER_PAGE
 
     return {
         "images": images_on_page,

@@ -72,8 +72,11 @@
     }
     .page-numbers {
         display: flex;
+        align-items: center;
         gap: 5px; 
     }
+    .page-numbers .csi-btn { min-width: 2.5rem; text-align: center; padding: 0.4rem 0.6rem; }
+    .page-ellipsis { color: rgba(224, 224, 224, 0.5); padding: 0 0.25rem; }
     .csi-btn.disabled {
         opacity: 0.5;
         pointer-events: none; 
@@ -125,6 +128,8 @@
         .modal-title { font-size: 0.95rem; }
         .footer { margin-top: 2rem; padding: 1rem; font-size: 0.75rem; }
         .pagination-nav { justify-content: center; }
+        .page-info { width: 100%; text-align: center; font-size: 0.8rem; }
+        .page-numbers .csi-btn { min-width: 2.25rem; padding: 0.45rem 0.5rem; font-size: 0.8rem; }
         .page-numbers { flex-wrap: wrap; justify-content: center; }
     }
 </style>
