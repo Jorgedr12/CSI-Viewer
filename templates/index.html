@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="top-bar">
-    <div class="text-light">Usuario: <strong class="text-info">{{ current_user.username }}</strong></div>
+    <div class="text-light text-truncate">Usuario: <strong class="text-info">{{ current_user.username }}</strong></div>
     <a href="{{ url_for('logout') }}" class="csi-btn"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a>
 </div>
 <header class="csi-header"><span class="icon fas fa-video"></span><h1>Sistema de Vigilancia</h1></header>

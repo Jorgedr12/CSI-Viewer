@@ -8,9 +8,9 @@
     <a href="{{ url_for('logout') }}" class="csi-btn"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a>
 </div>
 <h2 class="csi-subtitle mb-4">EVIDENCE LOG: {{ display_day }}</h2>
-<div class="row g-3">
+<div class="row g-2 g-md-3">
     {% for hour_data in hours %}
-    <div class="col-6 col-sm-4 col-md-3">
+    <div class="col-6 col-sm-4 col-md-3 col-xl-2">
         <div class="csi-panel">
             {% if hour_data.thumbnail %}
             <img src="{{ url_for('serve_image_path', filepath=day+'/'+hour_data.hour+'/normal/'+hour_data.thumbnail) }}" alt="Vista previa">

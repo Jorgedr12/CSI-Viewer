@@ -10,6 +10,12 @@
     .btn-submit { background-color: var(--csi-primary); border: none; color: #fff; width: 100%; font-weight: 700; transition: all 0.2s ease; }
     .btn-submit:hover { background-color: #fff; color: var(--csi-primary); }
     .csi-logo { width: 50%; max-width: 125px; height: auto; margin-bottom: 1.5rem; }
+    @media (max-width: 575.98px) {
+        .login-container { margin: 1.5rem auto; padding: 1.25rem !important; }
+        .csi-header.mt-5 { margin-top: 1rem !important; }
+        .csi-logo { max-width: 90px; margin-bottom: 1rem; }
+        .form-control { font-size: 16px; } /* evita el zoom automático en iOS */
+    }
 </style>
 <header class="csi-header mt-5">
     <img src="{{ url_for('static', filename='img/csipro.svg') }}" alt="CSI PRO Logo" class="csi-logo">

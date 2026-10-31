@@ -31,6 +31,30 @@
     .modal-nav-btn.next {
         right: 15px;
     }
+    #modal-image {
+        max-height: 85vh;
+        touch-action: pan-y pinch-zoom;
+        user-select: none;
+    }
+    @media (max-width: 575.98px) {
+        .modal-nav-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+        .modal-nav-btn.prev { left: 6px; }
+        .modal-nav-btn.next { right: 6px; }
+        .modal-fullscreen-sm-down .modal-content {
+            background-color: rgba(10, 10, 15, 0.97);
+        }
+        .modal-fullscreen-sm-down .modal-body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+        }
+        #modal-image { max-height: calc(100vh - 80px); }
+    }
 </style>
 
 <div class="top-bar">
@@ -42,7 +66,7 @@
     ANALYZING EVIDENCE: {{ display_day }} - {{ hour }} <span class="text-info">{{ time_range }}</span>
 </h2>
 
-<div class="row g-3 row-cols-1 row-cols-sm-3 row-cols-md-5">
+<div class="row g-2 g-md-3 row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5">
     {% for img in images %}
     <div>
         <div class="csi-panel">
@@ -58,7 +82,7 @@
 </div>
 
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="imageModalLabel"></h5>
@@ -66,7 +90,7 @@
             </div>
             <div class="modal-body text-center position-relative">
                 <button class="modal-nav-btn prev" id="modal-prev-btn"><i class="fas fa-chevron-left"></i></button>
-                <img src="" class="img-fluid" style="max-height: 85vh;" alt="Imagen ampliada" id="modal-image">
+                <img src="" class="img-fluid" alt="Imagen ampliada" id="modal-image">
                 <button class="modal-nav-btn next" id="modal-next-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
@@ -150,6 +174,24 @@
             if (event.key === 'ArrowRight') navigateNext();
             if (event.key === 'ArrowLeft') navigatePrev();
         });
+
+        // Deslizar para navegar en pantallas táctiles
+        let touchStartX = null;
+        let touchStartY = null;
+        const modalBody = imageModal.querySelector('.modal-body');
+        modalBody.addEventListener('touchstart', (event) => {
+            if (event.touches.length !== 1) { touchStartX = null; return; }
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        }, { passive: true });
+        modalBody.addEventListener('touchend', (event) => {
+            if (touchStartX === null) return;
+            const dx = event.changedTouches[0].clientX - touchStartX;
+            const dy = event.changedTouches[0].clientY - touchStartY;
+            touchStartX = null;
+            if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+            if (dx < 0) navigateNext(); else navigatePrev();
+        }, { passive: true });
 
         nextButton.addEventListener('click', navigateNext);
         prevButton.addEventListener('click', navigatePrev);
